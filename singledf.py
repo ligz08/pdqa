@@ -83,13 +83,13 @@ def check_groupby_agg(df, by, check_col, agg_func, desired_agg_val=True, almost_
     else:
         # fail info
         n_not_ok = sum(~ok)
-        inspection_detail += ' {} violatoins'.format(n_not_ok)
+        inspection_detail += ' {} violations'.format(n_not_ok)
         msg = make_log_msg(title, status='FAIL', detail=inspection_detail, extra=df_desc)
         fail_sample_filename = make_log_msg(title, status='FAIL', detail=inspection_detail, extra=df_desc, sep=' ')
         # log error
         logger.error(msg) if logger else print(msg)
         # make fail sample
-        fail_sampler.write_sample(df, ~ok, save_filename=fail_sample_filename, index=False) if fail_sampler else None
+        fail_sampler.write_sample(gb_agg, ~ok, save_filename=fail_sample_filename) if fail_sampler else None
         return False
 
 def check_groupby_identical(df: pd.DataFrame, by, check_col, df_desc=None, inspector_title='check_group_identical', inspection_detail=None, logger=None, fail_sampler=None):
@@ -145,7 +145,7 @@ class ColumnFormatInspector(DataFrameInspector):
         return check_col_format(df, **params)
 
 class GroupAggregateInspector(DataFrameInspector):
-    def __init__(self, by, check_col, agg_func, desired_agg_val, almost_equal=False, agg_func_name='infer', title='Group Aggregate Check', detail=None, logger=None, fail_sampler=None):
+    def __init__(self, by, check_col, agg_func, desired_agg_val, almost_equal=False, agg_func_name='infer', compare_tolerance={}, title='Group Aggregate Check', detail=None, logger=None, fail_sampler=None):
         try:
             agg_func_name = agg_func.__name__
         except:
@@ -158,6 +158,7 @@ class GroupAggregateInspector(DataFrameInspector):
         self.desired_agg_val = desired_agg_val
         self.almost_equal = almost_equal
         self.agg_func_name = agg_func_name
+        self.compare_tolerance = compare_tolerance
     
     def inspect(self, df, df_desc=None):
         params = {'by': self.by, 
@@ -166,6 +167,7 @@ class GroupAggregateInspector(DataFrameInspector):
                   'desired_agg_val': self.desired_agg_val,
                   'almost_equal': self.almost_equal, 
                   'agg_func_name': self.agg_func_name, 
+                  'compare_tolerance': self.compare_tolerance,
                   'inspector_title': self.title, 
                   'inspection_detail': self.detail, 
                   'df_desc': df_desc, 
