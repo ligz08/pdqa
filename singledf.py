@@ -10,7 +10,7 @@ def check_col_format(df, col, regex, df_desc=None, inspector_title='check_col_fo
     """
     Check if all elements of column `col` in dataframe `df` match `regex`.
     If check is OK, log an INFO message to logger, and return True.
-    If check fails, log an ERROR message to logger, write failed records to a csv in `fail_sample_dir`, and return False.
+    If check fails, log an ERROR message to logger, write failed records via `file_sampler`, and return False.
     """
     if col not in df.columns:
         msg = 'Column {} not found in dataframe'.format(col) + (' '+df_desc if df_desc else '')
@@ -65,7 +65,7 @@ def check_groupby_agg(df, by, check_col, agg_func, desired_agg_val=True, almost_
     """
     df.groupby(by)[check_col].agg(agg_func) should all equal to `desired_agg_val`.
     If so, log INFO message to logger, and return True.
-    If not, log ERROR message to logger, write a fail sample to `fail_sample_dir`, and return False.
+    If not, log ERROR message to logger, write a fail sample via `file_sampler`, and return False.
     When `almost_equal` is set to True, use numpy.isclose() rather than exact comparison. `compare_tolerance` is passed to numpy.isclose() as keyword arguments. 
     """
     # Prepare info about this check
@@ -96,7 +96,7 @@ def check_groupby_identical(df: pd.DataFrame, by, check_col, df_desc=None, inspe
     """
     df.groupby(by)[check_col] should be identical within each group.
     If so, log INFO message to logger, and return True.
-    If not, log ERROR message to logger, write a fail sample to `fail_sample_dir`, and return False.
+    If not, log ERROR message to logger, write a fail sample via `file_sampler`, and return False.
     """
     # Info about this check
     inspection_detail = inspection_detail or '{col} grouped by {by} is identical within group?'.format(col=check_col, by=by)
@@ -107,11 +107,11 @@ def check_groupby_identical(df: pd.DataFrame, by, check_col, df_desc=None, inspe
                       inspector_title=inspector_title, inspection_detail=inspection_detail, 
                       logger=logger, fail_sampler=fail_sampler)
 
-def check_no_duplicate(df, cols=None, df_desc=None, inspector_title='check_no_duplicate', inspection_detail=None, logger: logging.Logger=None, fail_sampler=None):
+def check_no_duplicate(df, cols=None, df_desc=None, inspector_title='check_no_duplicate', inspection_detail=None, logger=None, fail_sampler=None):
     """
     Cominations of values in `cols` should have no duplicates.
     If so, log INFO message to logger, and return True.
-    If not, log ERROR message to logger, write a fail sample to `fail_sample_dir`, and return False.
+    If not, log ERROR message to logger, write a fail sample via file_sampler, and return False.
     """
     dup = df.duplicated(subset=cols, keep=False)
     if not any(dup):
