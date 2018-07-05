@@ -92,7 +92,7 @@ def check_groupby_agg(df, by, check_col, agg_func, desired_agg_val=True, almost_
         fail_sampler.write_sample(gb_agg, ~ok, save_filename=fail_sample_filename) if fail_sampler else None
         return False
 
-def check_groupby_identical(df: pd.DataFrame, by, check_col, df_desc=None, inspector_title='check_group_identical', inspection_detail=None, logger=None, fail_sampler=None):
+def check_groupby_identical(df: pd.DataFrame, by, check_col, tolerance=None, df_desc=None, inspector_title='check_group_identical', inspection_detail=None, logger=None, fail_sampler=None):
     """
     df.groupby(by)[check_col] should be identical within each group.
     If so, log INFO message to logger, and return True.
@@ -101,8 +101,10 @@ def check_groupby_identical(df: pd.DataFrame, by, check_col, df_desc=None, inspe
     # Info about this check
     inspection_detail = inspection_detail or '{col} grouped by {by} is identical within group?'.format(col=check_col, by=by)
     check_groupby_agg(df=df, by=by, check_col=check_col, 
-                      agg_func=lambda series: series.nunique(dropna=False)<=1,
-                      desired_agg_val=True,
+                      agg_func=np.ptp,
+                      desired_agg_val=0,
+                      almost_equal=bool(tolerance),
+                      compare_tolerance=tolerance,
                       df_desc=df_desc,
                       inspector_title=inspector_title, inspection_detail=inspection_detail, 
                       logger=logger, fail_sampler=fail_sampler)
@@ -177,15 +179,17 @@ class GroupAggregateInspector(DataFrameInspector):
         return check_groupby_agg(df, **params)
 
 class IdenticalWithinGroupInspector(DataFrameInspector):
-    def __init__(self, by, check_col, almost_equal=False, title='Identical Within Group Check', detail=None, logger=None, fail_sampler=None):
+    def __init__(self, by, check_col, tolerance=None, title='Identical Within Group Check', detail=None, logger=None, fail_sampler=None):
         detail = detail or '{col} grouped by {by}'.format(col=check_col, by=by)
         super().__init__(title=title, detail=detail, logger=logger, fail_sampler=fail_sampler)
         self.by = by
         self.check_col = check_col
+        self.tolerance = tolerance
     
     def inspect(self, df, df_desc=None):
         params = {'by': self.by, 
                   'check_col': self.check_col, 
+                  'tolerance': self.tolerance,
                   'inspector_title': self.title, 
                   'inspection_detail': self.detail, 
                   'df_desc': df_desc, 
